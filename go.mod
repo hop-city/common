@@ -1,4 +1,4 @@
-module gitlab.com/jedenslad/backend/common
+module github.com/hop-city/common
 
 go 1.12
 
