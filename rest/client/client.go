@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/hop-city/common/wait"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -284,7 +285,12 @@ func (c *Client) readBody(opt *FetchOptions, resp *http.Response, data []byte) (
 
 		case "application/json":
 			if opt.Expect != nil {
-				err := json.Unmarshal(data, opt.Expect)
+				var err error
+				if out, ok := opt.Expect.(*[]byte); ok {
+					*out = data
+				} else {
+					err = json.Unmarshal(data, opt.Expect)
+				}
 				if err != nil {
 					return resp, errors.Errorf("rest/client.Fetch: error unmarshalling JSON data - '%s'", data)
 				}
@@ -296,7 +302,10 @@ func (c *Client) readBody(opt *FetchOptions, resp *http.Response, data []byte) (
 	if opt.Expect == nil {
 		return resp, nil
 	}
-	if out, ok := opt.Expect.(*string); ok {
+	fmt.Printf("%T\n", opt.Expect)
+	if out, ok := opt.Expect.(*[]byte); ok {
+		*out = data
+	} else if out, ok := opt.Expect.(*string); ok {
 		*out = string(data)
 	} else if out, ok := opt.Expect.(map[string]string); ok {
 		params, err := url.ParseQuery(string(data))

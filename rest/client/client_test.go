@@ -218,6 +218,20 @@ func TestClient_Fetch_UnamrshallingGuess(t *testing.T) {
 		return
 	}
 	assert.Equal(t, "koala12", string(read(resp)), "Data was not returned, or not parsed properly - %s", resp)
+
+	s.NextContentType = "application/json"
+	s.NextBody = []byte(`{"name":"koala12"}`)
+	expB := make([]byte, 0)
+	resp, err = client.Fetch(FetchOptions{
+		Method: "GET",
+		Url:    s.Ts.URL,
+		Expect: &expB,
+	})
+	if err != nil {
+		assert.Nil(t, err, "Should connect successfully")
+		return
+	}
+	assert.Equal(t, s.NextBody, expB, "Data was not returned, or not parsed properly - %s", resp)
 }
 func TestClient_Fetch_Auth(t *testing.T) {
 	ctx, cancel, s := setup()
