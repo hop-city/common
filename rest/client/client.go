@@ -117,7 +117,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 			log.Debug().Msgf(
 				"[%d/%d] rest/client.Fetch: %d No more retries. skipping %s",
 				opt.no,
-				retry,
+				retry-1,
 				lastResponse.StatusCode,
 				opt.Url,
 			)
@@ -125,7 +125,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 			log.Debug().Msgf(
 				"[%d/%d] rest/client.Fetch: No more retries. No response. skipping %s",
 				opt.no,
-				retry,
+				retry-1,
 				opt.Url,
 			)
 		}
@@ -136,7 +136,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 			log.Debug().Msgf(
 				"[%d/%d] rest/client.Fetch: Code %d will not be retried, skipping %s",
 				opt.no,
-				retry,
+				retry-1,
 				lastResponse.StatusCode,
 				opt.Url,
 			)
@@ -145,7 +145,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 		log.Debug().Msgf(
 			"[%d/%d] rest/client.Fetch: %d Retrying: %s",
 			opt.no,
-			retry,
+			retry-1,
 			lastResponse.StatusCode,
 			opt.Url,
 		)
