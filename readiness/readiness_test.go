@@ -89,12 +89,3 @@ func BenchmarkSet(b *testing.B) {
 		Set("a", true)
 	}
 }
-
-//func contextWithLog() context.Context {
-//	ctx := context.Background()
-//	log := zerolog.New(
-//		zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
-//	)
-//	ctx = log.WithContext(ctx)
-//	return ctx
-//}

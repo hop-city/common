@@ -63,7 +63,7 @@ func New(ctx context.Context, auth Auth) *Client {
 		Timeout: 30 * time.Second,
 	}
 
-	bo := wait.New().SetJitter(0.3).SetMultiplier(1)
+	backoff := wait.New().SetJitter(0.3).SetMultiplier(1)
 	c := &Client{
 		ctx: ctx,
 		log: zerolog.Ctx(ctx),
@@ -71,7 +71,7 @@ func New(ctx context.Context, auth Auth) *Client {
 		httpClient:           hc,
 		auth:                 auth,
 		maxRetries:           0,
-		backoff:              bo,
+		backoff:              backoff,
 		closeConnection:      false,
 		favourContentHeaders: false,
 		// https://httpstatuses.com
@@ -97,12 +97,6 @@ func (c *Client) FavourContentHeaders(do bool) *Client {
 	return c
 }
 
-//func (c *Client) Get(url string) ([]byte, error) {
-//
-//}
-//func (c *Client) Post() {
-//
-//}
 func (c *Client) Fetch(opt FetchOptions) (*http.Response, error) {
 	requestCount++
 	opt.no = requestCount
@@ -118,6 +112,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 	}
 
 	if retry > c.maxRetries {
+		// no more retries
 		if lastResponse != nil {
 			log.Debug().Msgf(
 				"[%d/%d] rest/client.Fetch: %d No more retries. skipping %s",
@@ -135,8 +130,8 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 			)
 		}
 		return lastResponse, lastError
-		//return nil, lastError
 	} else if retry > 0 && lastResponse != nil {
+		// still got retries, shall continue?
 		if !c.shouldRetry(lastResponse) {
 			log.Debug().Msgf(
 				"[%d/%d] rest/client.Fetch: Code %d will not be retried, skipping %s",
@@ -161,8 +156,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 
 	req, err := http.NewRequest(opt.Method, opt.Url, bodyReader)
 	if err != nil {
-		// this will not repair itself :)
-		return nil, errors.Wrap(err, "rest/client.Fetch: error creating request:")
+		return nil, errors.Wrapf(err, "[%d] rest/client.Fetch: error creating request:", retry)
 	}
 	if c.closeConnection {
 		req.Close = true
@@ -171,21 +165,13 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		// worth retrying
-		//log.Error().Err(err).Msg("rest/client.Fetch: Request error")
-		err = errors.Wrap(err, "rest/client.Fetch: error sending request:")
+		err = errors.Wrapf(err, "[%d] rest/client.Fetch: error sending request:", retry)
 		return c.fetch(opt, nil, err, retry+1)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	_ = resp.Body.Close()
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(data))
-
-	//if err != nil {
-	//	// worth retrying
-	//	err = errors.Wrap(err, "rest/client.Fetch: error reading response body buffer:")
-	//	return c.fetch(opt, resp, err, retry+1)
-	//}
 
 	d := string(data)
 	if len(d) > 100 {
@@ -199,22 +185,14 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 		resp.Header.Get("content-type"),
 		opt.Url,
 		d,
-		//resp.Header,
 	)
 	if resp.StatusCode == 401 {
 		if c.auth != nil {
 			c.auth.Refresh()
 			return c.fetch(opt, resp, err, retry+1)
 		}
-		return resp, errors.Errorf("rest/client.Fetch: unauthorised - code %d - %s", resp.StatusCode, data)
+		return resp, errors.Errorf("[%d] rest/client.Fetch: unauthorised - code %d - %s", retry, resp.StatusCode, data)
 	}
-	//if resp.StatusCode%400 < 100 {
-	//	return resp, errors.Errorf("rest/client.Fetch: request error - code %d - %s", resp.StatusCode, data)
-	//}
-	//if resp.StatusCode >= 500 {
-	//	err = errors.Errorf("rest/client.Fetch: error - code %d - %s", resp.StatusCode, data)
-	//	return c.fetch(opt, resp, err, retry+1)
-	//}
 	if resp.StatusCode >= 400 {
 		err = errors.Errorf("[%d] rest/client.Fetch: Error %d %s %s", retry, resp.StatusCode, opt.Url, data)
 		return c.fetch(opt, resp, err, retry+1)
@@ -254,11 +232,6 @@ func (c *Client) setHeaders(req *http.Request, opt FetchOptions) {
 	if c.auth != nil {
 		// blocking
 		c.auth.AppendHeader(&req.Header)
-		//select {
-		//case token := c.auth.GetToken():
-		//	req.Header.Set("authorization")
-		//}
-
 	}
 
 	// User headers

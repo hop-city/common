@@ -2,9 +2,11 @@ package readiness
 
 import (
 	"context"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
@@ -13,8 +15,8 @@ func setup() (context.Context, func()) {
 	<-time.After(time.Millisecond * 20)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(context.Background())
-	//log := zerolog.New(os.Stdout)
-	//ctx = log.WithContext(ctx)
+	log := zerolog.New(os.Stdout)
+	ctx = log.WithContext(ctx)
 	_ = Handler(ctx)
 	clearStatuses()
 	return ctx, cancel
@@ -58,10 +60,10 @@ func TestStartServer_readiness(t *testing.T) {
 		assert.Equal(t, "OK", body(resp),
 			"Incorrect body, 'OK' expected")
 	}
-
 	Set("a", false)
 	resp, err = http.Get("http://localhost:8080/readiness")
 	assert.Nil(t, err, "Should be able to connect")
+
 	if resp != nil {
 		assert.Equal(t,
 			http.StatusServiceUnavailable, resp.StatusCode,

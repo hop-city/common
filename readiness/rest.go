@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/rs/zerolog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -42,6 +43,9 @@ func StartServer(ctx context.Context, port string) {
 
 	Attach(ctx, r)
 
+	if port == "" {
+		port = os.Getenv("PORT")
+	}
 	if port == "" {
 		port = "8080"
 	}
