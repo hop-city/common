@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/hop-city/common/wait"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -302,7 +301,7 @@ func (c *Client) readBody(opt *FetchOptions, resp *http.Response, data []byte) (
 	if opt.Expect == nil {
 		return resp, nil
 	}
-	fmt.Printf("%T\n", opt.Expect)
+
 	if out, ok := opt.Expect.(*[]byte); ok {
 		*out = data
 	} else if out, ok := opt.Expect.(*string); ok {
