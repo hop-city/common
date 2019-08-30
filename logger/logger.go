@@ -2,6 +2,7 @@ package logger
 
 import (
 	"github.com/go-chi/chi/middleware"
+	"github.com/jessevdk/go-flags"
 	"github.com/rs/zerolog"
 	zero "github.com/rs/zerolog/log"
 	"io"
@@ -11,44 +12,23 @@ import (
 )
 
 type arguments struct {
-	LogLevel  string `env:"LOG_LEVEL" short:"l" long:"log-level" default:"info"`
-	PrettyLog string `env:"LOG_PRETTY" short:"p" long:"pretty"`
-	Caller    string `env:"LOG_CALLER" long:"caller" description:"Shall I log caller?"`
-	Revision  string `env:"REVISION" long:"revision" default:""`
+	LogLevel string `env:"LOG_LEVEL" short:"l" long:"log-level" default:"info" description:"Minimum logging level"`
+	Pretty   bool   `env:"LOG_PRETTY" short:"p" long:"log-pretty" description:"Will skipp JSON logging and in favor of colour output"`
+	Caller   bool   `env:"LOG_CALLER" short:"c" long:"log-caller" description:"Will log file and line"`
+	Revision string `env:"LOG_REVISION" long:"log-revision"`
 }
 
 var args = arguments{}
-var parsed = false
 var output io.Writer
 
-func New() *zerolog.Logger {
-	setupEnvironment()
-	defer func() {
-		parsed = true
-	}()
-
-	ctx := zerolog.New(output).With().Timestamp()
-	if args.Caller != "" {
-		ctx = ctx.Caller()
+func init() {
+	parser := flags.NewParser(&args, flags.Default|flags.IgnoreUnknown)
+	_, err := parser.Parse()
+	if err != nil {
+		os.Exit(1)
 	}
-	if args.Revision != "" {
-		ctx = ctx.Str("revision", args.Revision)
-	}
-	logger := ctx.Logger()
 
-	return &logger
-}
-
-func setupEnvironment() {
-	if parsed {
-		return
-	}
-	args.LogLevel = os.Getenv("LOG_LEVEL")
-	args.PrettyLog = os.Getenv("LOG_PRETTY")
-	args.Caller = os.Getenv("LOG_CALLER")
-	args.Revision = os.Getenv("REVISION")
-
-	if args.PrettyLog != "" {
+	if args.Pretty {
 		output = zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	} else {
 		output = os.Stdout
@@ -58,8 +38,22 @@ func setupEnvironment() {
 	if err != nil {
 		level = zerolog.InfoLevel
 		zero.Error().Err(err).Msg("Logger: Invalid error level provided")
+		os.Exit(1)
 	}
 	zerolog.SetGlobalLevel(level)
+}
+
+func New() *zerolog.Logger {
+	ctx := zerolog.New(output).With().Timestamp()
+	if args.Caller {
+		ctx = ctx.Caller()
+	}
+	if args.Revision != "" {
+		ctx = ctx.Str("revision", args.Revision)
+	}
+	logger := ctx.Logger()
+
+	return &logger
 }
 
 func Middleware(next http.Handler) http.Handler {
