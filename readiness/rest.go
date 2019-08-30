@@ -10,14 +10,42 @@ import (
 	"time"
 )
 
+func Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		if r.Method == "GET" && strings.Contains(strings.ToLower(r.URL.Path), "/liveness") {
+			w.WriteHeader(http.StatusOK)
+			_, err = w.Write([]byte("OK"))
+			if err != nil {
+				logg.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
+			}
+
+		} else if r.Method == "GET" && strings.Contains(strings.ToLower(r.URL.Path), "/readiness") {
+			if IsReady() {
+				w.WriteHeader(http.StatusOK)
+				_, err = w.Write([]byte("OK"))
+			} else {
+				// https://tools.ietf.org/html/rfc7231#section-6.6
+				w.WriteHeader(http.StatusServiceUnavailable)
+				_, err = w.Write([]byte("Not ready"))
+			}
+			if err != nil {
+				logg.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
+			}
+		} else {
+			next.ServeHTTP(w, r)
+		}
+	})
+}
+
 func Attach(ctx context.Context, r chi.Router) {
-	log = zerolog.Ctx(ctx)
+	logg = zerolog.Ctx(ctx)
 
 	r.Get("/liveness", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("OK"))
 		if err != nil {
-			log.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
+			logg.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
 		}
 	}))
 
@@ -31,13 +59,13 @@ func Attach(ctx context.Context, r chi.Router) {
 			_, err = w.Write([]byte("Not ready"))
 		}
 		if err != nil {
-			log.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
+			logg.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
 		}
 	}))
 }
 
 func StartServer(ctx context.Context, port string) {
-	log = zerolog.Ctx(ctx)
+	logg = zerolog.Ctx(ctx)
 	r := chi.NewRouter()
 
 	Attach(ctx, r)
@@ -57,13 +85,13 @@ func StartServer(ctx context.Context, port string) {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	log.Info().Msg("Readiness.StartServer: starting listening on port 8080")
+	logg.Info().Msg("Readiness.StartServer: starting listening on port 8080")
 	go func() {
 		err := server.ListenAndServe()
 		if err != nil {
 			// skip error on normal close
 			if !strings.Contains(err.Error(), "Server closed") {
-				log.Error().Err(err).Msg("Readiness.StartServer: Error starting health check server")
+				logg.Error().Err(err).Msg("Readiness.StartServer: Error starting health check server")
 			}
 		}
 	}()
@@ -73,8 +101,8 @@ func StartServer(ctx context.Context, port string) {
 		<-ctx.Done()
 		err := server.Close()
 		if err != nil {
-			log.Error().Err(err).Msg("Readiness.StartServer: error stopping health check server")
+			logg.Error().Err(err).Msg("Readiness.StartServer: error stopping health check server")
 		}
-		log.Info().Msg("Readiness.StartServer: health check server shut down")
+		logg.Info().Msg("Readiness.StartServer: health check server shut down")
 	}()
 }

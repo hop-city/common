@@ -1,8 +1,7 @@
 package readiness
 
 import (
-	"context"
-	"github.com/rs/zerolog"
+	"github.com/hop-city/common/logger"
 	"sync"
 )
 
@@ -14,14 +13,10 @@ type (
 )
 
 var data = status{ready: make(map[string]bool)}
-var log = &zerolog.Logger{}
-
-func Init(ctx context.Context) {
-	log = zerolog.Ctx(ctx)
-}
+var logg = logger.New()
 
 func Set(k string, v bool) {
-	log.Info().Msgf(">> %s - readiness <- %t", k, v)
+	logg.Info().Msgf(">> %s - readiness = %t", k, v)
 	data.mu.Lock()
 	data.ready[k] = v
 	data.mu.Unlock()
@@ -33,7 +28,7 @@ func IsReady() bool {
 	defer data.mu.Unlock()
 	for k, v := range data.ready {
 		if !v {
-			log.Info().Msgf(">> %s - is not ready yet", k)
+			logg.Info().Msgf(">> %s - is not ready yet", k)
 			ready = false
 		}
 	}
