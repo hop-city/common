@@ -34,7 +34,6 @@ func Attach(ctx context.Context, r chi.Router) {
 			log.Error().Err(err).Msgf("Error responding to \"%s\" check", r.URL.Path)
 		}
 	}))
-
 }
 
 func StartServer(ctx context.Context, port string) {

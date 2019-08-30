@@ -11,6 +11,11 @@ import (
 
 var stopApp = make(chan os.Signal, 1)
 
+// Scaffold
+// - creates context with cancel,
+// - initializes and attaches zerolog logger to context
+// - creates termination signal listener responsible
+//   for closing context Done channel
 func Scaffold() (context.Context, *zerolog.Logger) {
 	log := logger.New()
 	log.Info().Msgf("-- INITIALIZING app with pid %d", os.Getpid())

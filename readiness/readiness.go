@@ -7,8 +7,6 @@ import (
 )
 
 type (
-	H struct{}
-
 	status struct {
 		mu    sync.Mutex
 		ready map[string]bool
@@ -18,13 +16,8 @@ type (
 var data = status{ready: make(map[string]bool)}
 var log = &zerolog.Logger{}
 
-func Handler(ctx context.Context) *H {
+func Init(ctx context.Context) {
 	log = zerolog.Ctx(ctx)
-	return &H{}
-}
-
-func (h *H) Set(k string, v bool) {
-	Set(k, v)
 }
 
 func Set(k string, v bool) {
@@ -46,7 +39,3 @@ func IsReady() bool {
 	}
 	return ready
 }
-
-//func Init(ctx context.Context) {
-//	log = zerolog.Ctx(ctx)
-//}

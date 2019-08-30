@@ -9,11 +9,12 @@ import (
 )
 
 func TestScaffold(t *testing.T) {
-	ctx, log := Scaffold()
+	ctx, logg := Scaffold()
 
-	assert.Equal(t, zerolog.Ctx(ctx), log,
+	assert.Equal(t, zerolog.Ctx(ctx), logg,
 		"Logger should be the same")
 
+	stopApp <- syscall.SIGINT
 	for {
 		select {
 		case <-time.After(time.Millisecond * 10):
@@ -21,8 +22,6 @@ func TestScaffold(t *testing.T) {
 			return
 		case <-ctx.Done():
 			return
-		default:
-			stopApp <- syscall.SIGINT
 		}
 	}
 }

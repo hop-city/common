@@ -17,7 +17,7 @@ func setup() (context.Context, func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 	log := zerolog.New(os.Stdout)
 	ctx = log.WithContext(ctx)
-	_ = Handler(ctx)
+	//_ = Handler(ctx)
 	clearStatuses()
 	return ctx, cancel
 }
