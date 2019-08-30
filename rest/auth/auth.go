@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/hop-city/common/wait"
+	"github.com/hop-city/common/backoff"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"log"
@@ -57,13 +57,13 @@ var authList = make([]*Auth, 0)
 var readyCallbacks = make([]func(bool), 0)
 var oldReady = false
 
-var retryWait *wait.Wait
+var retryWait *backoff.Backoff
 
 // TODO(mb) support refresh
 // TODO(mb) add other authorisation methods as needed
 
 func init() {
-	retryWait = wait.New().SetJitter(0.3).SetMultiplier(1)
+	retryWait = backoff.New().SetJitter(0.3).SetBaseDuration(1000)
 }
 
 // creates and initialises base object fields
@@ -163,7 +163,7 @@ func (a *Auth) fetchToken() {
 		select {
 		case <-a.ctx.Done():
 			return
-		case <-retryWait.Backoff(a.ctx, a.reqCount-1):
+		case <-retryWait.Wait(a.ctx, a.reqCount-1):
 		}
 	}
 	a.fetching.Store(true)

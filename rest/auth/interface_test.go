@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 		respCode = http.StatusOK
 	}))
 	defer ts.Close()
-	retryWait.SetMultiplier(1e-3)
+	retryWait.SetBaseDuration(1)
 	code := m.Run()
 	shutdown()
 	os.Exit(code)
@@ -141,7 +141,7 @@ func TestResourceOwner(t *testing.T) {
 	})
 	assert.Nil(t, err, "Should not return error if all options are set")
 	// speed up retry process
-	retryWait.SetMultiplier(1e-3)
+	retryWait.SetBaseDuration(1)
 
 	var token string
 	select {
@@ -316,14 +316,14 @@ func TestResourceOwner_RetriesCount(t *testing.T) {
 	})
 	assert.Nil(t, err, "Should not return error if all options are set")
 
-	retryWait.SetMultiplier(1e-3)
+	retryWait.SetBaseDuration(1)
 	select {
 	case token := <-a.GetToken():
 		assert.Failf(t, "Token should not be returned", token)
 	case <-time.After(time.Millisecond * 100):
 	}
 	assert.Equal(t, a.maxRetries, uint(reqCount-1), "Incorrect number of retries")
-	retryWait.SetMultiplier(1e-3)
+	retryWait.SetBaseDuration(1)
 }
 
 func TestResourceOwner_JSONError(t *testing.T) {

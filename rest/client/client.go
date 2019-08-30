@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/hop-city/common/wait"
+	"github.com/hop-city/common/backoff"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"io"
@@ -22,7 +22,7 @@ type (
 		httpClient           *http.Client
 		auth                 Auth
 		maxRetries           uint
-		backoff              *wait.Wait
+		backoff              *backoff.Backoff
 		closeConnection      bool
 		favourContentHeaders bool
 		retryStatusCodes     []int
@@ -63,7 +63,7 @@ func New(ctx context.Context, auth Auth) *Client {
 		Timeout: 30 * time.Second,
 	}
 
-	backoff := wait.New().SetJitter(0.3).SetMultiplier(1)
+	backoff := backoff.New().SetJitter(0.3).SetBaseDuration(1)
 	c := &Client{
 		ctx: ctx,
 		log: zerolog.Ctx(ctx),
@@ -150,7 +150,7 @@ func (c *Client) fetch(opt FetchOptions, lastResponse *http.Response, lastError 
 			opt.Url,
 		)
 	}
-	<-c.backoff.Backoff(c.ctx, retry)
+	<-c.backoff.Wait(c.ctx, retry)
 
 	bodyReader := readPayload(opt.Send)
 

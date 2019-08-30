@@ -4,7 +4,7 @@ App package is responsible for initialising most basic parts of the app.
 - creates context.Context with cancel
 - adds logger to context
 - creates handler for termination signals - `SIGINT`, `SIGTERM`, `SIGKILL` - that closes ctx.Done channel
-- returns context and cancel method
+- returns __context.Context__ object and __cancel__ method
 
 
 

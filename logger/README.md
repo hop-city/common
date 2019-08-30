@@ -4,7 +4,7 @@ https://github.com/rs/zerolog
 
 ### Instantiate logger
 ```go
-func New() *zerolog.Logger {
+func New() *zerolog.Logger
 ```
 Logger is also added to ctx of __app package__ (`ctx, cancel := app.Scaffold()`).
 
