@@ -31,7 +31,7 @@ func setup() (context.Context, func(), chi.Router) {
 func TestStart(t *testing.T) {
 	ctx, cancel, r := setup()
 	defer cancel()
-	Start(ctx, ServerOptions{r, "9019"})
+	Start(ctx, ServerOptions{r, "9019", 0, 0, 0})
 
 	resp, err := http.Get("http://localhost:9019")
 	assert.NoError(t, err, "We should be able to listen on custom port")
@@ -46,7 +46,7 @@ func TestStartport(t *testing.T) {
 	ctx, cancel, r := setup()
 	defer cancel()
 
-	Start(ctx, ServerOptions{r, ""})
+	Start(ctx, ServerOptions{r, "", 0, 0, 0})
 
 	resp, err := http.Get("http://localhost:8080")
 	assert.NoError(t, err, "We should be able to listen on default port")

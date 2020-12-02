@@ -14,6 +14,10 @@ type (
 	ServerOptions struct {
 		Router chi.Router
 		Port   string
+
+		ReadHeaderTimeout time.Duration
+		WriteTimeout time.Duration
+		IdleTimeout time.Duration
 	}
 )
 
@@ -33,13 +37,23 @@ func Start(ctx context.Context, opt ServerOptions) {
 		log.Info().Msg("Network.StartServer: server port not provided - using default 8080")
 	}
 
+	if opt.ReadHeaderTimeout == 0 {
+		opt.ReadHeaderTimeout = 30 * time.Second
+	}
+	if opt.WriteTimeout == 0 {
+		opt.WriteTimeout = 30 * time.Second
+	}
+	if opt.IdleTimeout == 0 {
+		opt.IdleTimeout = 120 * time.Second
+	}
+
 	// server
 	server := http.Server{
 		Addr:              ":" + opt.Port,
 		Handler:           opt.Router,
-		ReadHeaderTimeout: 30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: opt.ReadHeaderTimeout,
+		WriteTimeout:      opt.WriteTimeout,
+		IdleTimeout:       opt.IdleTimeout,
 	}
 
 	// start server
